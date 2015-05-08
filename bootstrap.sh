@@ -101,19 +101,19 @@ server {
         }
 
         location =/js/index.php/x.js {
-            rewrite ^(.*\.php)/ $1 last;
+            rewrite ^(.*\.php)/ \$1 last;
         }
 
 
         location / {
 
-            try_files $uri $uri/ @rewrite;
+            try_files \$uri \$uri/ @rewrite;
 
         }
 
         location @rewrite {
 
-            rewrite / /index.php?$args;
+            rewrite / /index.php?\$args;
 
         }
 
@@ -130,7 +130,7 @@ server {
               fastcgi_split_path_info ^(.+\.php)(/.+)$;
               # With php5-fpm:
               fastcgi_pass unix:/var/run/php5-fpm.sock;
-              fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+              fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
               fastcgi_index index.php;
               include fastcgi_params;
         }
