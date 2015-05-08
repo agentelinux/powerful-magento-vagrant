@@ -3,6 +3,8 @@
 SAMPLE_DATA=$1
 MAGE_VERSION="1.9.1.1"
 DATA_VERSION="1.9.1.0"
+IP_OR_HOSTNAME="127.0.0.1"
+ADMIN_MAIL="krishna@agentelinux.com.br"
 
 
 SO=$(cat <<EOF
@@ -311,10 +313,10 @@ if [ ! -f "/vagrant/httpdocs/app/etc/local.xml" ]; then
   sudo /usr/bin/php -f install.php -- --license_agreement_accepted yes \
   --locale en_US --timezone "America/Sao_Paulo" --default_currency USD \
   --db_host localhost --db_name magentodb --db_user magentouser --db_pass password \
-  --url "http://127.0.0.1:8080/" --use_rewrites yes \
-  --use_secure no --secure_base_url "http://127.0.0.1:8080/" --use_secure_admin no \
+  --url "http://${IP_OR_HOSTNAME}/" --use_rewrites yes \
+  --use_secure no --secure_base_url "http://${IP_OR_HOSTNAME}/" --use_secure_admin no \
   --skip_url_validation yes \
-  --admin_lastname Owner --admin_firstname Store --admin_email "krishna@agentelinux.com.br" \
+  --admin_lastname Owner --admin_firstname Store --admin_email "${ADMIN_MAIL}" \
   --admin_username admin --admin_password password123123
   /usr/bin/php -f shell/indexer.php reindexall
 fi
@@ -340,3 +342,5 @@ echo -e '\nDAEMON_OPTS="-a :80 \
              -p session_linger=100 \
              -S /etc/varnish/secret \
              -s malloc,2G"' >> /etc/default/varnish
+
+service varnish restart
