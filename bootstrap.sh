@@ -3,7 +3,7 @@
 SAMPLE_DATA=$1
 MAGE_VERSION="1.9.1.1"
 DATA_VERSION="1.9.1.0"
-IP_OR_HOSTNAME="127.0.0.1"
+IP_OR_HOSTNAME="127.0.0.1:8081"
 ADMIN_MAIL="krishna@agentelinux.com.br"
 
 
@@ -329,7 +329,7 @@ chmod +x ./n98-magerun.phar
 sudo mv ./n98-magerun.phar /usr/local/bin/
 
 
-echo -e '\nDAEMON_OPTS="-a :80 \
+echo -e '\nDAEMON_OPTS="-a :8081 \
              -T localhost:6082 \
              -f /etc/varnish/default.vcl \
              -u varnish -g varnish \
