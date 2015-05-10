@@ -52,7 +52,7 @@ net.ipv4.udp_wmem_min = 16384
 vm.dirty_background_ratio = 2
 vm.dirty_ratio = 60
 vm.swappiness = 10
-
+vm.overcommit_memory=1
 
 EOF
 )
@@ -62,15 +62,27 @@ echo "$SO" > /etc/sysctl.conf
 
 sysctl -q -p
 
+# Pre-Install HHVM
+apt-get install software-properties-common
+apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0x5a16e7281be7a449
+add-apt-repository 'deb http://dl.hhvm.com/ubuntu trusty main'
+
 # Update Apt
 # --------------------
 apt-get update
+
+# Install HHVM
+apt-get install -y hhvm
+update-rc.d hhvm defaults
+
+#Redis Cache and Session
+apt-get install -y redis-server
 
 # Install Apache & PHP
 # --------------------
 apt-get install -y varnish
 apt-get install -y nginx
-apt-get install -y php5-fpm
+#apt-get install -y php5-fpm
 apt-get install -y php5-mysqlnd php5-curl php5-xdebug php5-gd php5-intl php-pear php5-imap php5-mcrypt php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl php-soap
 
 php5enmod mcrypt
@@ -139,9 +151,10 @@ server {
         # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
 
         location ~ \.php$ {
+              expires off;
               fastcgi_split_path_info ^(.+\.php)(/.+)$;
-              # With php5-fpm:
-              fastcgi_pass unix:/var/run/php5-fpm.sock;
+              # With HHVM:
+              fastcgi_pass 127.0.0.1:9000;
               fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
               fastcgi_index index.php;
               include fastcgi_params;
@@ -164,9 +177,11 @@ sed -i "68d" /etc/nginx/nginx.conf
 sed -i "68i     include /etc/nginx/conf.d/*.conf;" /etc/nginx/nginx.conf
 sed -i "69i     include /etc/nginx/sites-enabled/*;" /etc/nginx/nginx.conf
 
-
 service nginx restart
-service php5-fpm restart
+
+# SET HHVM
+/usr/share/hhvm/install_fastcgi.sh
+service hhvm restart
 
 # Mysql
 # --------------------
@@ -248,8 +263,8 @@ innodb_file_per_table = 1
 innodb_io_capacity = 400
 innodb_read_io_threads = 8
 innodb_write_io_threads = 8
-innodb_buffer_pool_instances = 8
-innodb_buffer_pool_size = 4G
+innodb_buffer_pool_instances = 4
+innodb_buffer_pool_size = 256M
 
 ### LOGGING #
 log_error = /var/log/mysql/error.log
@@ -329,7 +344,7 @@ chmod +x ./n98-magerun.phar
 sudo mv ./n98-magerun.phar /usr/local/bin/
 
 
-echo -e '\nDAEMON_OPTS="-a :8081 \
+echo -e '\nDAEMON_OPTS="-a :80 \
              -T localhost:6082 \
              -f /etc/varnish/default.vcl \
              -u varnish -g varnish \
@@ -344,3 +359,54 @@ echo -e '\nDAEMON_OPTS="-a :8081 \
              -s malloc,2G"' >> /etc/default/varnish
 
 service varnish restart
+
+# Configure REDIS Session
+sed -i "s/false/true/g" /usr/share/nginx/html/public/app/etc/modules/Cm_RedisSession.xml
+
+sed -i "55d" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "55i <session_save>db</session_save>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "56i <redis_session>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "57i <host>127.0.0.1</host>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "58i <port>6379</port>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "59i <password></password>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "60i <timeout>2.5</timeout>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "61i <persistent></persistent>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "62i <db>0</db>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "63i <compression_threshold>2048</compression_threshold>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "64i <compression_lib>gzip</compression_lib>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "65i <log_level>1</log_level>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "66i <max_concurrency>6</max_concurrency>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "67i <break_after_frontend>5</break_after_frontend>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "68i <break_after_adminhtml>30</break_after_adminhtml>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "69i <first_lifetime>600</first_lifetime>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "70i <bot_first_lifetime>60</bot_first_lifetime>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "71i <bot_lifetime>7200</bot_lifetime>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "72i <disable_locking>0</disable_locking>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "73i <min_lifetime>60</min_lifetime>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "74i <max_lifetime>2592000</max_lifetime>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "75i </redis_session>" /usr/share/nginx/html/public/app/etc/local.xml
+
+
+# This is a child node of config/global
+sed -i "76i <cache>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "77i   <backend>Cm_Cache_Backend_Redis</backend>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "78i   <backend_options>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "79i     <server>127.0.0.1</server>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "80i     <port>6379</port>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "81i     <persistent></persistent> " /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "82i     <database>0</database> " /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "83i     <password></password>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "84i     <force_standalone>0</force_standalone>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "85i     <connect_retries>1</connect_retries>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "86i     <read_timeout>10</read_timeout> " /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "87i     <automatic_cleaning_factor>0</automatic_cleaning_factor>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "88i     <compress_data>1</compress_data>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "89i     <compress_tags>1</compress_tags>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "90i     <compress_threshold>20480</compress_threshold> " /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "91i     <compression_lib>gzip</compression_lib>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "92i     <use_lua>0</use_lua>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "93i   </backend_options>" /usr/share/nginx/html/public/app/etc/local.xml
+sed -i "94i </cache>" /usr/share/nginx/html/public/app/etc/local.xml
+
+
+echo "THE END"
