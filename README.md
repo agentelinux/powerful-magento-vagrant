@@ -1,12 +1,13 @@
 simple-magento-vagrant
 ======================
 
-A VERY simple Magento environment provisioner for [Vagrant](http://www.vagrantup.com/).
+A VERY simple (and powerful) Magento environment provisioner for [Vagrant](http://www.vagrantup.com/).
 
 ![Magento & Vagrant](https://cookieflow.files.wordpress.com/2013/07/magento_vagrant.jpg?w=525&h=225)
 
 * Creates a running Magento development environment with a few simple commands.
-* Runs on Ubuntu (Trusty 14.04 64 Bit) \w PHP 5.5, MySQL 5.5, Nginx 1.4, Varnish 3
+* Runs on Ubuntu (Trusty 14.04 64 Bit) \w
+  * PHP 5.5, MySQL 5.5, Nginx 1.4, Varnish 3, Redis, HHVM
 * Uses [Magento CE 1.9.1.1](http://www.magentocommerce.com/download)
 * Automatically runs Magento's installer and creates CMS admin account.
 * Optionally installs Magento Sample Store Inventory
