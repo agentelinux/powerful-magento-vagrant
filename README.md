@@ -1,4 +1,4 @@
-simple-magento-vagrant
+powerful-magento-vagrant
 ======================
 
 A VERY simple (and powerful) Magento environment provisioner for [Vagrant](http://www.vagrantup.com/).
@@ -14,6 +14,7 @@ A VERY simple (and powerful) Magento environment provisioner for [Vagrant](http:
 * Automatically runs [n98-magerun](https://github.com/netz98/n98-magerun) installer.
 * Perfect for rapid development or extension testing with an unopionionated, bare-bones and easily tweaked configuration.
 * Goes from naught-to-Magento in a couple of minutes.
+* Thanks [r-baker](https://github.com/r-baker/simple-magento-vagrant)
 
 ## Getting Started
 
