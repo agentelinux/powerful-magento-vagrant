@@ -324,6 +324,6 @@ sed -i "92i     <use_lua>0</use_lua>" /usr/share/nginx/html/public/app/etc/local
 sed -i "93i   </backend_options>" /usr/share/nginx/html/public/app/etc/local.xml
 sed -i "94i </cache>" /usr/share/nginx/html/public/app/etc/local.xml
 
-chmod -R www-data: /usr/share/nginx/html/public
+chown -R www-data: /usr/share/nginx/html/public
 
 echo "THE END"
