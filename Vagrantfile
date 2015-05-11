@@ -23,8 +23,8 @@ Vagrant.configure("2") do |config|
   config.ssh.forward_agent = true
 
   config.vm.provider :virtualbox do |vb|
-    vb.customize ["modifyvm", :id, "--memory", "2048"]
-    vb.customize ["modifyvm", :id, "--cpuexecutioncap", "90"]
+    vb.customize ["modifyvm", :id, "--memory", "1024"]
+    vb.customize ["modifyvm", :id, "--cpuexecutioncap", "100"]
     vb.name = "simple-magento-vagrant-nginx"
     vb.cpus = 2
   end

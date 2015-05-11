@@ -63,9 +63,15 @@ echo "$SO" > /etc/sysctl.conf
 sysctl -q -p
 
 # Pre-Install HHVM
-apt-get install software-properties-common
+apt-get install -y software-properties-common
 apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0x5a16e7281be7a449
 add-apt-repository 'deb http://dl.hhvm.com/ubuntu trusty main'
+apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A
+add-apt-repository 'deb http://repo.percona.com/apt trusty main'
+
+# Remove extra packages
+apt-get autoremove -y apache2
+
 
 # Update Apt
 # --------------------
@@ -83,14 +89,19 @@ apt-get install -y redis-server
 apt-get install -y varnish
 apt-get install -y nginx
 #apt-get install -y php5-fpm
-apt-get install -y php5-mysqlnd php5-curl php5-xdebug php5-gd php5-intl php-pear php5-imap php5-mcrypt php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl php-soap
+#apt-get install -y php5-mysqlnd php5-curl php5-xdebug php5-gd php5-intl php-pear php5-imap php5-mcrypt php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl php-soap
 
-php5enmod mcrypt
+# Use HHVM for /usr/bin/php even if you have php-cli installed:
+/usr/bin/update-alternatives --install /usr/bin/php5 php5 /usr/bin/hhvm 60
+
+#php5enmod mcrypt
 
 # Delete default apache web dir and symlink mounted vagrant dir from host machine
 # --------------------
-mkdir /vagrant/httpdocs
-ln -fs /vagrant/httpdocs /usr/share/nginx/html/public
+#mkdir /vagrant/httpdocs
+#ln -fs /vagrant/httpdocs /usr/share/nginx/html/public
+mkdir /usr/share/nginx/html/public
+
 
 # Replace contents of default Apache vhost
 # --------------------
@@ -188,100 +199,8 @@ service hhvm restart
 # Ignore the post install questions
 export DEBIAN_FRONTEND=noninteractive
 # Install MySQL quietly
-apt-get -q -y install mysql-server-5.5
-
-
-SQL=$(cat <<EOF
-
-[client]
-port            = 3306
-socket          = /var/run/mysqld/mysqld.sock
-
-[mysqld_safe]
-socket          = /var/run/mysqld/mysqld.sock
-nice            = 0
-
-[mysqld]
-
-user            = mysql
-pid-file        = /var/run/mysqld/mysqld.pid
-socket          = /var/run/mysqld/mysqld.sock
-port            = 3306
-basedir         = /usr
-datadir         = /var/lib/mysql
-tmpdir          = /tmp
-lc-messages-dir = /usr/share/mysql
-
-### MyISAM #
-key_buffer_size = 16M # keep it low if no myisam data
-myisam-recover-options = FORCE,BACKUP
-
-### SAFETY #
-innodb = force
-max_allowed_packet = 150M
-max_connect_errors = 100000
-bind-address = 127.0.0.1
-skip-name-resolve
-
-### LANGUAGE #
-init_connect='SET collation_connection = utf8_unicode_ci'
-init_connect='SET NAMES utf8'
-character-set-server=utf8
-collation-server=utf8_unicode_ci
-skip-character-set-client-handshake
-
-### CACHES AND LIMITS #
-back_log = 200
-interactive_timeout = 7200
-wait_timeout = 7200
-net_read_timeout = 120
-net_write_timeout = 300
-sort_buffer_size = 2M
-read_buffer_size = 2M
-read_rnd_buffer_size = 16M
-join_buffer_size = 4M
-tmp_table_size = 128M
-max_heap_table_size = 128M
-query_cache_type = 1
-query_cache_size = 128M
-query_cache_limit = 4M
-max_connections = 150
-thread_cache_size= 32
-open_files_limit = 65535
-table_definition_cache = 4000
-table_open_cache = 4000
-
-### INNODB_ #
-innodb_thread_concurrency = 0
-innodb_lock_wait_timeout = 7200
-innodb_flush_method = O_DIRECT
-innodb_log_files_in_group = 2
-innodb_log_file_size = 256M
-innodb_log_buffer_size = 16M
-innodb_flush_log_at_trx_commit = 2
-innodb_file_per_table = 1
-innodb_io_capacity = 400
-innodb_read_io_threads = 8
-innodb_write_io_threads = 8
-innodb_buffer_pool_instances = 4
-innodb_buffer_pool_size = 256M
-
-### LOGGING #
-log_error = /var/log/mysql/error.log
-#log_queries_not_using_indexes = 1
-#slow_query_log_file = /var/lib/mysql/mysql-slow.log
-
-### BINARY LOGGING #
-#log_bin = /var/lib/mysql/mysql-bin
-#expire_logs_days = 14
-#sync_binlog = 1
-
-EOF
-)
-
-
-echo "$SQL" > /etc/mysql/my.cnf
-
+#apt-get -q -y install mysql-server-5.5
+apt-get -y install percona-server-server-5.6 percona-server-client-5.6
 
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS magentodb"
 mysql -u root -e "GRANT ALL PRIVILEGES ON magentodb.* TO 'magentouser'@'localhost' IDENTIFIED BY 'password'"
@@ -293,8 +212,8 @@ mysql -u root -e "FLUSH PRIVILEGES"
 # http://www.magentocommerce.com/wiki/1_-_installation_and_configuration/installing_magento_via_shell_ssh
 
 # Download and extract
-if [[ ! -f "/vagrant/httpdocs/index.php" ]]; then
-  cd /vagrant/httpdocs
+if [[ ! -f "/usr/share/nginx/html/public/index.php" ]]; then
+  cd /usr/share/nginx/html/public
   wget http://www.magentocommerce.com/downloads/assets/${MAGE_VERSION}/magento-${MAGE_VERSION}.tar.gz
   tar -zxvf magento-${MAGE_VERSION}.tar.gz
   mv magento/* magento/.htaccess .
@@ -315,8 +234,8 @@ if [[ $SAMPLE_DATA == "true" ]]; then
   fi
 
   tar -zxvf magento-sample-data-${DATA_VERSION}.tar.gz
-  cp -R magento-sample-data-${DATA_VERSION}/media/* httpdocs/media/
-  cp -R magento-sample-data-${DATA_VERSION}/skin/*  httpdocs/skin/
+  cp -R magento-sample-data-${DATA_VERSION}/media/* /usr/share/nginx/html/public/media/
+  cp -R magento-sample-data-${DATA_VERSION}/skin/*  /usr/share/nginx/html/public/skin/
   mysql -u root magentodb < magento-sample-data-${DATA_VERSION}/magento_sample_data_for_${DATA_VERSION}.sql
   rm -rf magento-sample-data-${DATA_VERSION}
 fi
@@ -324,7 +243,7 @@ fi
 
 # Run installer
 if [ ! -f "/vagrant/httpdocs/app/etc/local.xml" ]; then
-  cd /vagrant/httpdocs
+  cd /usr/share/nginx/html/public
   sudo /usr/bin/php -f install.php -- --license_agreement_accepted yes \
   --locale en_US --timezone "America/Sao_Paulo" --default_currency USD \
   --db_host localhost --db_name magentodb --db_user magentouser --db_pass password \
