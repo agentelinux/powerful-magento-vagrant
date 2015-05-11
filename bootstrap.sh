@@ -51,7 +51,7 @@ net.ipv4.udp_rmem_min = 16384
 net.ipv4.udp_wmem_min = 16384
 vm.dirty_background_ratio = 2
 vm.dirty_ratio = 60
-vm.swappiness = 10
+vm.swappiness = 50
 vm.overcommit_memory=1
 
 EOF
@@ -90,6 +90,7 @@ apt-get install -y varnish
 apt-get install -y nginx
 #apt-get install -y php5-fpm
 #apt-get install -y php5-mysqlnd php5-curl php5-xdebug php5-gd php5-intl php-pear php5-imap php5-mcrypt php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl php-soap
+apt-get install -y git-core
 
 # Use HHVM for /usr/bin/php even if you have php-cli installed:
 /usr/bin/update-alternatives --install /usr/bin/php5 php5 /usr/bin/hhvm 60
@@ -214,13 +215,9 @@ mysql -u root -e "FLUSH PRIVILEGES"
 # Download and extract
 if [[ ! -f "/usr/share/nginx/html/public/index.php" ]]; then
   cd /usr/share/nginx/html/public
-  wget http://www.magentocommerce.com/downloads/assets/${MAGE_VERSION}/magento-${MAGE_VERSION}.tar.gz
-  tar -zxvf magento-${MAGE_VERSION}.tar.gz
-  mv magento/* magento/.htaccess .
+  git clone https://github.com/OpenMage/magento-mirror .
   chmod -R o+w media var
   chmod o+w app/etc
-  # Clean up downloaded file and extracted dir
-  rm -rf magento*
 fi
 
 
@@ -257,7 +254,7 @@ fi
 
 # Install n98-magerun
 # --------------------
-cd /vagrant/httpdocs
+cd /usr/share/nginx/html/public
 wget https://raw.github.com/netz98/n98-magerun/master/n98-magerun.phar
 chmod +x ./n98-magerun.phar
 sudo mv ./n98-magerun.phar /usr/local/bin/
@@ -327,5 +324,6 @@ sed -i "92i     <use_lua>0</use_lua>" /usr/share/nginx/html/public/app/etc/local
 sed -i "93i   </backend_options>" /usr/share/nginx/html/public/app/etc/local.xml
 sed -i "94i </cache>" /usr/share/nginx/html/public/app/etc/local.xml
 
+chmod -R www-data: /usr/share/nginx/html/public
 
 echo "THE END"

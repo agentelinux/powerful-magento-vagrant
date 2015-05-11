@@ -7,13 +7,18 @@ A VERY simple (and powerful) Magento environment provisioner for [Vagrant](http:
 
 * Creates a running Magento development environment with a few simple commands.
 * Runs on Ubuntu (Trusty 14.04 64 Bit) \w
-  * PHP 5.5, MySQL 5.5, Nginx 1.4, Varnish 3, Redis, HHVM
+  * Percona Server 5.6 (like MySQL)
+  * Redis  (Session and Page Cache)
+  * HHVM 3 (PHP from Facebook)
+  * Nginx 1.4 (HTTP server)
+  * Varnish 3 (Reverse Proxy and Cache Content)
 * Uses [Magento CE 1.9.1.1](http://www.magentocommerce.com/download)
 * Automatically runs Magento's installer and creates CMS admin account.
 * Optionally installs Magento Sample Store Inventory
 * Automatically runs [n98-magerun](https://github.com/netz98/n98-magerun) installer.
 * Perfect for rapid development or extension testing with an unopionionated, bare-bones and easily tweaked configuration.
 * Goes from naught-to-Magento in a couple of minutes.
+* Removed packages: apache2* and php5*
 * Thanks [r-baker](https://github.com/r-baker/simple-magento-vagrant)
 
 ## Getting Started
